@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "g++-5 - Générer et déboguer le fichier actif",
+            "name": "g++ - Générer et déboguer le fichier actif",
             "type": "cppdbg",
             "request": "launch",
             "program": "${fileDirname}/../bin/${fileBasenameNoExtension}",
