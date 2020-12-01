@@ -1,0 +1,23 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "C/C++: g++-5 build active file",
+			"command": "/usr/bin/g++-5",
+			"args": [
+				"-g",
+				"${file}",
+				"-o",
+				"${fileDirname}/../bin/${fileBasenameNoExtension}"
+			],
+			"options": {
+				"cwd": "/usr/bin"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build",
+			"detail": "compiler: /usr/bin/g++-5"
+		}
+	]
+}

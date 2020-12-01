@@ -8,7 +8,6 @@ using namespace std;
 
 int main(int argc, char const *argv[])
 {
-	srand(117);
 	while (true)
 	{
 		printf("%d\n", rand() %100);
