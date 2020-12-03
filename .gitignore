@@ -33,3 +33,4 @@
 
 #compiled folders
 bin/*
+.vscode
