@@ -1,0 +1,1 @@
+enum Protocole{PRIMARY, BACKUP};
