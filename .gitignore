@@ -31,9 +31,5 @@
 *.out
 *.app
 
-#compiled folders
-capteur/bin/*
-service/bin/*
-
 #vscode folder
 .vscode
