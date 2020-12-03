@@ -32,5 +32,5 @@
 *.app
 
 #compiled folders
-bin/*
+*/bin/*
 .vscode
