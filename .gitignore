@@ -32,7 +32,8 @@
 *.app
 
 #compiled folders
-.*/bin/*
+capteur/bin/*
+service/bin/*
 
 #vscode folder
 .vscode
