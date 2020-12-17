@@ -15,7 +15,6 @@ bool CapteurDriver::start(uint16_t _port) {
     servaddr.sin_port = htons(_port); 
     // servaddr.sin_addr.s_addr = INADDR_ANY; 
     inet_aton("127.0.0.255", &servaddr.sin_addr);
-    printf("listening on : %s\n", inet_ntoa(servaddr.sin_addr));
 
     // Bind the socket with the server address 
     if ( bind(this->sockfd, (const struct sockaddr *)&servaddr,  
@@ -43,7 +42,6 @@ void CapteurDriver::cycle() {
                     MSG_WAITALL, (struct sockaddr *) &servaddr, 
                     &len); 
         buffer[n] = '\0';
-        printf("Server : %s\n", buffer); 
         this->dataReceived.push(buffer);
         usleep(50000);
     }

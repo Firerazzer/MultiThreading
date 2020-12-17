@@ -14,8 +14,8 @@ using namespace std;
 class Service {
     public:
         int saveMemory(int x);
-        list<int> loadMemory(int n);
-        int calculOutput(list<int> list);
+        void loadMemory(int n);
+        double calculOutput();
         Service(uint16_t _port);
         ~Service();
         void display(int result);
