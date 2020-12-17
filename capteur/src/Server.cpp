@@ -1,21 +1,12 @@
 #include "Server.hpp"
-
-#include <iostream>
-#include <stdio.h> 
-#include <stdlib.h> 
-#include <unistd.h> 
-#include <string.h> 
-#include <arpa/inet.h>
   
 using namespace std;
-
-#define PORT     8080 
-#define MAXLINE 1024 
 
 // Driver code 
 void Server::sendToAll(const char* data, unsigned int len) { 
     cout << data << endl;
-    sendto(sockfd, data, len, MSG_CONFIRM, (struct sockaddr*) &cliaddr, sizeof cliaddr);
+    sendto(sockfd, data, len, MSG_CONFIRM, (struct sockaddr*) &cliaddr_1, sizeof cliaddr_1);
+    sendto(sockfd, data, len, MSG_CONFIRM, (struct sockaddr*) &cliaddr_2, sizeof cliaddr_2);
 } 
 
 
@@ -35,24 +26,45 @@ bool Server::start() {
     servaddr.sin_addr.s_addr = INADDR_ANY; 
     servaddr.sin_port = htons(PORT); 
       
-    // Bind the socket with the server address 
-    if ( bind(this->sockfd, (const struct sockaddr *)&servaddr,  
-            sizeof(servaddr)) < 0 ) 
-    { 
-        perror("bind failed"); 
-        exit(EXIT_FAILURE); 
-    } 
+    // // Bind the socket with the server address 
+    // if ( bind(this->sockfd, (const struct sockaddr *)&servaddr,  
+    //         sizeof(servaddr)) < 0 ) 
+    // { 
+    //     perror("bind failed"); 
+    //     exit(EXIT_FAILURE); 
+    // } 
 
-    memset(&cliaddr, 0, sizeof cliaddr);
-    cliaddr.sin_family = AF_INET;
-    cliaddr.sin_port = htons(PORT);
+    memset(&cliaddr_1, 0, sizeof cliaddr_1);
+    cliaddr_1.sin_family = AF_INET;
+    cliaddr_1.sin_port = htons(PORT);
     // broadcasting address for unix (?)
-    inet_aton("127.0.0.255", &cliaddr.sin_addr);
+    inet_aton("127.0.0.255", &cliaddr_1.sin_addr);
     //cliaddr.sin_addr.s_addr = INADDR_ANY;
+
+    memset(&cliaddr_2, 0, sizeof cliaddr_2);
+    cliaddr_2.sin_family = AF_INET;
+    cliaddr_2.sin_port = htons(PORT+1);
+    inet_aton("127.0.0.255", &cliaddr_2.sin_addr);
+
+    this->threadCycle = thread(&Server::cycle, this);
 
     return true;
 }
 
+void Server::cycle() {
+    while (!killCycle)
+    {
+        if(this->toSend.size() > 0) {
+            sendToAll(this->toSend.front().c_str(), this->toSend.front().length());
+            this->toSend.pop();
+        }
+        usleep(50000);
+    }
+    
+}
+
 void Server::stop() {
+    this->killCycle = true;
+    threadCycle.join();
     close(this->sockfd);
 }

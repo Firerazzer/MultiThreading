@@ -8,25 +8,23 @@
 #include <arpa/inet.h>
 #include <thread>
 
-#define PORT    8080 
 #define MAXLINE 1024 
 
 using namespace std;
 
-class Server
+class CapteurDriver
 {
     int sockfd; 
-	struct sockaddr_in cliaddr_1;
-	struct sockaddr_in cliaddr_2;
+	struct sockaddr_in servaddr;
 	bool killCycle = false;
 
 	public:
-		queue<string> toSend;
-		bool start();
+		queue<string> dataReceived;
+        //2 ports available : 8080 and 8081
+		bool start(uint16_t _port);
 		void stop();
 
 	private:
 		thread threadCycle;
 		void cycle();
-		void sendToAll(const char* data, unsigned int len);
 };

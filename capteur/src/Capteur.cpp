@@ -21,14 +21,14 @@ int main(int argc, char const *argv[])
 {
 	Server s;
 	s.start();
-	thread first (keyPressed);
+	thread quit (keyPressed);
 	cout << key << (key!="quit") << true << endl;
 	while (key!="quit")
 	{
-		s.sendToAll(to_string((rand()%100)).c_str(), 6);
+		s.toSend.push(to_string(rand()%100).c_str());
 		sleep(1);
 	}
-	first.join();
+	quit.join();
 	s.stop();
     return 0;
 }

@@ -1,24 +1,16 @@
-#include <stdio.h>
-#include <iostream>
-#include <stdlib.h>
-#include <string>
-#include <ctime>
-#include <unistd.h>
-#include <fstream>
-#include <list>
+#include "Service.hpp"
 
-using namespace std;
+Service::Service(uint16_t _port) {
+    driver.start(_port);
+    killCycle = false;
+    this->threadCycle = thread(&Service::cycle, this);
+}
 
-class Service {
-    public:
-        int saveMemory(int x);
-        list<int> loadMemory(int n);
-        int calculOutput(list<int> list);
-        void display(int result);
-
-    private:
-        list<int> storage;
-};
+Service::~Service() {
+    killCycle = true;
+    threadCycle.join();
+    driver.stop();
+}
 
 int Service::saveMemory (int x) {
     ofstream memory;
@@ -88,14 +80,26 @@ void Service::display(int result) {
     cout << "Result : " << result << "\n";
 }
 
+void Service::cycle() {
+    while (!killCycle)
+    {
+        if(this->driver.dataReceived.size() > 0) {
+            display(atoi(this->driver.dataReceived.front().c_str()));
+            this->driver.dataReceived.pop();
+        }
+        usleep(50000);
+    }
+    
+}
+
 int main(int argc, char const *argv[])
 {
-	Service srv;
+	Service srv(8080);
     int n = 5;
     srv.saveMemory(n);
     list<int> l = srv.loadMemory(n);
     int r = srv.calculOutput(l);
     srv.display(r);
-	
+	sleep(10);
     return 0;
 }
