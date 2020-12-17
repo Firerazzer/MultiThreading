@@ -31,6 +31,5 @@
 *.out
 *.app
 
-#compiled folders
-*/bin/*
+#vscode folder
 .vscode

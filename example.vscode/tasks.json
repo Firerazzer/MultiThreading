@@ -1,4 +1,5 @@
 {
+	"type": "shell",
 	"version": "2.0.0",
 	"tasks": [
 		{
@@ -6,9 +7,10 @@
 			"command": "/usr/bin/g++",
 			"args": [
 				"-g",
-				"${file}",
+				"${fileDirname}/*.cpp",
 				"-o",
-				"${fileDirname}/../bin/${fileBasenameNoExtension}"
+				"${fileDirname}/../bin/${fileBasenameNoExtension}",
+				"-lpthread"
 			],
 			"options": {
 				"cwd": "/usr/bin"
