@@ -14,7 +14,7 @@ string key = "";
 void keyPressed() {
 	cout << "press enter to stop the captor" << endl;
 	cin.get();
-	key = "q";
+	key = "quit";
 }
 
 int main(int argc, char const *argv[])
@@ -22,7 +22,8 @@ int main(int argc, char const *argv[])
 	Server s;
 	s.start();
 	thread first (keyPressed);
-	while (key.compare(""))
+	cout << key << (key!="quit") << true << endl;
+	while (key!="quit")
 	{
 		s.sendToAll(to_string((rand()%100)).c_str(), 6);
 		sleep(1);

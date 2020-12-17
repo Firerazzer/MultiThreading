@@ -14,6 +14,7 @@ using namespace std;
 
 // Driver code 
 void Server::sendToAll(const char* data, unsigned int len) { 
+    cout << data << endl;
     sendto(sockfd, data, len, MSG_CONFIRM, (struct sockaddr*) &cliaddr, sizeof cliaddr);
 } 
 
