@@ -1,4 +1,4 @@
-#include "Watchdog.h"
+#include "Watchdog.hpp"
 
 Watchdog::Watchdog(){
     stateSys = true;
@@ -13,7 +13,7 @@ bool Watchdog::kick(){
             stateSys = false;
             kill = true;
         }
-    }  
+    }
     return kill; 
 }
 
