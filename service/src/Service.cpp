@@ -1,7 +1,16 @@
 #include "Service.hpp"
+#include <chrono>
 
 Service::Service(uint16_t _port) {
+    //Lance la lecture du capteur
     driver.start(_port);
+
+    // ftok to generate unique key 
+    key_t key = ftok("shmkick",65); 
+    // shmget returns an identifier in shmid 
+    shmid = shmget(key,sizeof(bool),0666|IPC_CREAT);
+
+    //lance le cycle du service
     killCycle = false;
     this->threadCycle = thread(&Service::cycle, this);
 }
@@ -75,6 +84,7 @@ void Service::display(int result) {
 void Service::cycle() {
     while (!killCycle)
     {
+        kickWatchdog();
         if(this->driver.dataReceived.size() > 0) {
             this->storage.push_back(atoi(this->driver.dataReceived.front().c_str()));
             this->driver.dataReceived.pop();
@@ -86,11 +96,22 @@ void Service::cycle() {
     
 }
 
+void Service::kickWatchdog() {
+    this->p_kick = (bool*) shmat(shmid,(void*)0,0);
+    *p_kick = true; 
+    shmdt(p_kick); 
+}
+
 int main(int argc, char const *argv[])
 {
+    auto start = std::chrono::high_resolution_clock::now();
 	Service srv(8080);
     int n = 5;
     srv.loadMemory(n);
+    auto finish = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = finish - start;
+    std::cout << "Elapsed time: " << elapsed.count() << " s\n";
+
 	sleep(100);
     srv.display(srv.calculOutput());
     return 0;

@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string>
 #include <ctime>
+#include <sys/ipc.h> 
+#include <sys/shm.h> 
 #include <unistd.h>
 #include <fstream>
 #include <list>
@@ -24,6 +26,9 @@ class Service {
         list<int> storage;
         bool killCycle;
         thread threadCycle;
+        bool *p_kick;
+        int shmid;
         CapteurDriver driver;
         void cycle();
+        void kickWatchdog();
 };
