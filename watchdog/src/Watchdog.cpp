@@ -7,16 +7,19 @@ Watchdog::Watchdog(){
     kill = false;
 
     // ftok to generate unique key 
-    key_t key = ftok("shmkick",65); 
+    key_t keyKick = ftok("shmkick",65); 
+    key_t keyState = ftok("shmstate",66); 
     // shmget returns an identifier in shmid 
-    shmid = shmget(key,sizeof(bool),0666|IPC_CREAT); 
+    shmidKick = shmget(keyKick,sizeof(bool),0666|IPC_CREAT); 
+    shmidState = shmget(keyState,sizeof(bool),0666|IPC_CREAT); 
 }
 
 Watchdog::~Watchdog(){
     stateSys = false;
 
     // destroy the shared memory 
-    shmctl(this->shmid,IPC_RMID,NULL);       
+    shmctl(this->shmidKick,IPC_RMID,NULL);       
+    shmctl(this->shmidState,IPC_RMID,NULL); 
 }
 
 bool Watchdog::start(){
@@ -46,18 +49,20 @@ void Watchdog::cycle() {
     while (!kill)
     {
         // shmat to attach to shared memory 
-        p_kick = (bool*) shmat(shmid,(void*)0,0);
+        p_kick = (bool*) shmat(shmidKick,(void*)0,0);
+        p_state= (bool*) shmat(shmidState,(void*)0,0);
         if(*p_kick) {
             this->_timer = 0;
             stateSys = true;
+        } else {
+            *p_state = false;
         }
         *p_kick = false;
         shmdt(p_kick);
+        shmdt(p_state);
         usleep(50000);
     }
-    
 }
-
 
 int main(){
     //detach from shared memory  

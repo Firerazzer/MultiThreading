@@ -13,15 +13,16 @@ class Watchdog{
     private:
     int secondes;
     std::atomic<unsigned int> _timer;
-    bool kill, *p_kick;
+    bool kill, *p_kick, *p_state;
     thread threadCycle;
-    int shmid;
+    int shmidKick;
+    int shmidState;
     void cycle();
 
     public:
     bool stateSys;
     Watchdog();
-    ~Watchdog(){};
+    ~Watchdog();
     bool start();
     int getTimeLimit();
 };

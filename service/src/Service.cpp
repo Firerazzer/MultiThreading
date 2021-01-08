@@ -1,14 +1,20 @@
 #include "Service.hpp"
 #include <chrono>
+#define n 5
 
-Service::Service(uint16_t _port) {
+Service::Service(uint16_t _port, int protocole) {
+    this->protocole = protocole;
+
     //Lance la lecture du capteur
     driver.start(_port);
 
     // ftok to generate unique key 
-    key_t key = ftok("shmkick",65); 
+    key_t keyKick = ftok("shmkick",65); 
+    key_t keyState = ftok("shmstate",66); 
+
     // shmget returns an identifier in shmid 
-    shmid = shmget(key,sizeof(bool),0666|IPC_CREAT);
+    shmidKick = shmget(keyKick,sizeof(bool),0666|IPC_CREAT);
+    shmidState = shmget(keyState,sizeof(bool),0666|IPC_CREAT);
 
     //lance le cycle du service
     killCycle = false;
@@ -16,7 +22,7 @@ Service::Service(uint16_t _port) {
 }
 
 Service::~Service() {
-    killCycle = true;
+    //killCycle = true;
     threadCycle.join();
     driver.stop();
 }
@@ -45,7 +51,7 @@ int Service::saveMemory (int x) {
     return 0;
 }
 
-void Service::loadMemory(int n){
+void Service::loadMemory(){
     ifstream memory ("service/data/memory");
     string line;
 
@@ -81,38 +87,56 @@ void Service::display(int result) {
     cout << "Result : " << result << "\n";
 }
 
+bool Service::readStateWatchdog() {
+    auto p_state = (bool*) shmat(shmidState,(void*)0,0);
+    auto state = *p_state; 
+    shmdt(p_state); 
+    return state;
+}
+
 void Service::cycle() {
     while (!killCycle)
     {
-        kickWatchdog();
-        if(this->driver.dataReceived.size() > 0) {
-            this->storage.push_back(atoi(this->driver.dataReceived.front().c_str()));
-            this->driver.dataReceived.pop();
-            cout << "output : " << calculOutput() << endl;
-            saveMemory(this->storage.back());
+        // Processing in PRIMARY mode
+        if(this->protocole == Protocole::PRIMARY) {
+            kickWatchdog();
+            //cout << this->driver.dataReceived.size() << endl;
+            if(this->driver.dataReceived.size() > 0) {
+              //  cout << "coucou" << endl;
+                this->storage.push_back(atoi(this->driver.dataReceived.front().c_str()));
+                this->driver.dataReceived.pop();
+                cout << "output : " << calculOutput() << endl;
+                saveMemory(this->storage.back());
+            }
+
+        // Processing in BACKUP mode
+        } else {
+            auto primaryAlive = readStateWatchdog();
+            if(!primaryAlive) {
+                loadMemory();
+                this->protocole = Protocole::PRIMARY;
+            }
         }
         usleep(50000);
     }
-    
 }
 
 void Service::kickWatchdog() {
-    this->p_kick = (bool*) shmat(shmid,(void*)0,0);
+    this->p_kick = (bool*) shmat(shmidKick,(void*)0,0);
     *p_kick = true; 
     shmdt(p_kick); 
 }
 
 int main(int argc, char const *argv[])
 {
-    auto start = std::chrono::high_resolution_clock::now();
-	Service srv(8080);
-    int n = 5;
-    srv.loadMemory(n);
-    auto finish = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = finish - start;
-    std::cout << "Elapsed time: " << elapsed.count() << " s\n";
+    //auto start = std::chrono::high_resolution_clock::now();
+	Service srv(8080, Protocole::PRIMARY);
+    //srv.loadMemory();
+    //auto finish = std::chrono::high_resolution_clock::now();
+    //std::chrono::duration<double> elapsed = finish - start;
+    //std::cout << "Elapsed time: " << elapsed.count() << " s\n";
 
-	sleep(100);
-    srv.display(srv.calculOutput());
+	//sleep(100);
+    //srv.display(srv.calculOutput());
     return 0;
 }

@@ -10,15 +10,17 @@
 #include <list>
 #include <thread>
 #include "CapteurDriver.hpp"
+#include "Protocole.hpp"
 
 using namespace std;
 
 class Service {
     public:
         int saveMemory(int x);
-        void loadMemory(int n);
+        void loadMemory();
         double calculOutput();
-        Service(uint16_t _port);
+        bool readStateWatchdog();
+        Service(uint16_t _port, int protocole);
         ~Service();
         void display(int result);
 
@@ -27,8 +29,11 @@ class Service {
         bool killCycle;
         thread threadCycle;
         bool *p_kick;
-        int shmid;
+        int shmidKick;
+        int shmidState;
         CapteurDriver driver;
+        int protocole;
+
         void cycle();
         void kickWatchdog();
 };
