@@ -22,8 +22,9 @@ Service::Service(uint16_t _port, int protocole) {
 }
 
 Service::~Service() {
-    //killCycle = true;
-    threadCycle.join();
+    killCycle = true;
+    if(threadCycle.joinable())
+        threadCycle.join();
     driver.stop();
 }
 

@@ -16,6 +16,7 @@ using namespace std;
 
 class Service {
     public:
+        bool killCycle;
         int saveMemory(int x);
         void loadMemory();
         double calculOutput();
@@ -26,7 +27,6 @@ class Service {
 
     private:
         list<int> storage;
-        bool killCycle;
         thread threadCycle;
         bool *p_kick;
         int shmidKick;
