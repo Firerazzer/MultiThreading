@@ -26,7 +26,7 @@ int main(int argc, char const *argv[])
 	while (key!="quit")
 	{
 		s.toSend.push(to_string(rand()%100).c_str());
-		sleep(1);
+		usleep(250000);
 	}
 	quit.join();
 	s.stop();

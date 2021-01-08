@@ -17,7 +17,8 @@ Service::Service(uint16_t _port) {
 
 Service::~Service() {
     killCycle = true;
-    threadCycle.join();
+    if(threadCycle.joinable())
+        threadCycle.join();
     driver.stop();
 }
 
@@ -107,12 +108,12 @@ int main(int argc, char const *argv[])
     auto start = std::chrono::high_resolution_clock::now();
 	Service srv(8080);
     int n = 5;
-    srv.loadMemory(n);
     auto finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = finish - start;
     std::cout << "Elapsed time: " << elapsed.count() << " s\n";
 
-	sleep(100);
+	sleep(10);
     srv.display(srv.calculOutput());
+    srv.killCycle = true;
     return 0;
 }

@@ -3,69 +3,110 @@
 
 Watchdog::Watchdog(){
     stateSys = false;
-    _timer = 0; //exprimé en 10^-5 secondes
+    startTime = clock();
     kill = false;
 
     // ftok to generate unique key 
-    key_t key = ftok("shmkick",65); 
+    key_t keyKick = ftok("shmkick",65); 
+    key_t keyState = ftok("shmState",65); 
     // shmget returns an identifier in shmid 
-    shmid = shmget(key,sizeof(bool),0666|IPC_CREAT); 
+    shmidKick = shmget(keyKick,sizeof(bool),0666|IPC_CREAT); 
+    shmidState = shmget(keyState,sizeof(bool),0666|IPC_CREAT); 
+
+    this->setKick(false);
 }
 
 Watchdog::~Watchdog(){
     stateSys = false;
+    kill = true;
+    threadCycle.join();
 
     // destroy the shared memory 
-    shmctl(this->shmid,IPC_RMID,NULL);       
+    shmctl(this->shmidKick,IPC_RMID,NULL);
+    shmctl(this->shmidState,IPC_RMID,NULL);
+
 }
 
-bool Watchdog::start(){
+void Watchdog::start(){
+    startTime = clock();
+    this->stateSys = true;
+    this->kill = false;
+    this->setState(true);
+    this->threadCycle = thread(&Watchdog::cycle, this);
+    this->watch();
+}
+
+
+void Watchdog::watch(){
     while(stateSys){
-        _timer++;
-        if(_timer > getTimeLimit()){
+        if(((clock() - startTime) / (CLOCKS_PER_SEC / 1000)) > getTimeLimit()){
             stateSys = false;
             kill = true;
+            setState(false);
+            cerr << "No kick during " << ((clock() - startTime) / (CLOCKS_PER_SEC / 1000000.0)) << "us\n";
+            this->threadCycle.join();
         }
-    }
-    return kill; 
+    } 
 }
 
 int Watchdog::getTimeLimit(){
-    int nbSecond;
-    std::ifstream file ("save.txt");
-    if(!file){
-        std::cerr << "Impossible d'ouvrir le fichier " << std::endl;
-        return 1;
-    } else{
-        file >> nbSecond;
+    if(timeLimit < 0) {
+        std::ifstream file ("save.txt");
+        if(!file){
+            std::cerr << "Impossible d'ouvrir le fichier " << std::endl;
+            timeLimit = DEFAULT_TIME_LIMIT;
+        } else{
+            file >> timeLimit;
+        }
     }
-    return nbSecond;
+    if(timeLimit < 0) timeLimit = DEFAULT_TIME_LIMIT;
+    return timeLimit;
 }
 
 void Watchdog::cycle() {
+    
     while (!kill)
     {
-        // shmat to attach to shared memory 
-        p_kick = (bool*) shmat(shmid,(void*)0,0);
-        if(*p_kick) {
-            this->_timer = 0;
-            stateSys = true;
+        if(getKick()) {
+            this->startTime = clock();
         }
-        *p_kick = false;
-        shmdt(p_kick);
+        setKick(false);
         usleep(50000);
     }
     
 }
 
+bool Watchdog::getKick() {
+    bool res = false;
+    p_kick = (bool*) shmat(shmidKick,(void*)0,SHM_RDONLY);
+    res = *p_kick;
+    shmdt(p_kick);
+    return res;
+}
+
+void Watchdog::setKick(bool _kick) {
+    p_kick = (bool*) shmat(shmidKick,(void*)0,0);
+    *p_kick = _kick;
+    shmdt(p_kick);
+}
+
+void Watchdog::setState(bool _state) {
+    bool* shmState = (bool*) shmat(shmidKick,(void*)0,0);
+    *shmState = _state;
+    shmdt(shmState);
+}
+
 
 int main(){
-    //detach from shared memory  
     Watchdog test;
-    while(!test.stateSys)
-        usleep(50000);
+
+    while(true) {
+        cout << "wait for primary service" << endl;
+        while(!test.getKick())
+            usleep(50000);
         
-    if(test.start()){
-        std::cout << "KILL" << std::endl;
-    };
+        cout << "first kick" << endl;
+        test.start();
+        cout << "primary lost" << endl;
+    }
 }

@@ -50,6 +50,7 @@ void CapteurDriver::cycle() {
 
 void CapteurDriver::stop() {
     this->killCycle = true;
-    this->threadCycle.join();
+    if(this->threadCycle.joinable())
+        this->threadCycle.join();
     close(this->sockfd);
 }
