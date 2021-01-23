@@ -33,16 +33,13 @@ bool CapteurDriver::start(uint16_t _port) {
 void CapteurDriver::cycle() {
     while (!killCycle)
     {
-        cout << killCycle << endl;
         char buffer[MAXLINE];
       
         int n;
         socklen_t len;
-        cout << killCycle << endl;    
         n = recvfrom(sockfd, (char *)buffer, MAXLINE,  
                     MSG_WAITALL, (struct sockaddr *) &servaddr, 
-                    &len); 
-        cout << n << endl;
+                    &len);
         buffer[n] = '\0';
         this->dataReceived.push(buffer);
         usleep(50000);

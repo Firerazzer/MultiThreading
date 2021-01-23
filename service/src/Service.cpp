@@ -4,17 +4,20 @@
 
 Service::Service(uint16_t _port, int protocole) {
     this->protocole = protocole;
-
-    //Lance la lecture du capteur
-    driver.start(_port);
+    this->port = _port;
 
     // ftok to generate unique key 
     key_t keyKick = ftok("shmkick",65); 
-    key_t keyState = ftok("shmstate",66); 
+    key_t keyState = ftok("smstate",70); 
 
     // shmget returns an identifier in shmid 
-    shmidKick = shmget(keyKick,sizeof(bool),0666|IPC_CREAT);
-    shmidState = shmget(keyState,sizeof(bool),0666|IPC_CREAT);
+    shmidKick = shmget(keyKick,sizeof(bool),0);
+    shmidState = shmget(keyState,sizeof(bool),0);
+    cout << "shmidState : " << shmidState << endl;
+
+    //Lance la lecture du capteur si on est en primary
+    if(this->protocole == PRIMARY)
+        driver.start(this->port);
 
     //lance le cycle du service
     killCycle = false;
@@ -89,8 +92,8 @@ void Service::display(int result) {
 }
 
 bool Service::readStateWatchdog() {
-    auto p_state = (bool*) shmat(shmidState,(void*)0,0);
-    auto state = *p_state; 
+    bool* p_state = (bool*) shmat(shmidState,(void*)0,0);
+    bool state = *p_state; 
     shmdt(p_state); 
     return state;
 }
@@ -103,7 +106,6 @@ void Service::cycle() {
             kickWatchdog();
             //cout << this->driver.dataReceived.size() << endl;
             if(this->driver.dataReceived.size() > 0) {
-              //  cout << "coucou" << endl;
                 this->storage.push_back(atoi(this->driver.dataReceived.front().c_str()));
                 this->driver.dataReceived.pop();
                 cout << "output : " << calculOutput() << endl;
@@ -112,17 +114,24 @@ void Service::cycle() {
 
         // Processing in BACKUP mode
         } else {
-            auto primaryAlive = readStateWatchdog();
+            bool primaryAlive = readStateWatchdog();
+            cout << "state read : " << primaryAlive << endl;
             if(!primaryAlive) {
-                loadMemory();
-                this->protocole = Protocole::PRIMARY;
+                usleep(100);
+                if(!readStateWatchdog()) {
+                    loadMemory();
+                    this->protocole = Protocole::PRIMARY;
+                    cout << "Switch BACKUP to PRIMARY" << endl;
+                    //demarrage de la lecture du capteur
+                    driver.start(this->port);
+                }
             }
         }
         usleep(50000);
     }
 }
 
-void Service::kickWatchdog() {
+void Service::  kickWatchdog() {
     this->p_kick = (bool*) shmat(shmidKick,(void*)0,0);
     *p_kick = true; 
     shmdt(p_kick); 
@@ -131,13 +140,27 @@ void Service::kickWatchdog() {
 int main(int argc, char const *argv[])
 {
     //auto start = std::chrono::high_resolution_clock::now();
-	Service srv(8080, Protocole::PRIMARY);
+    cout << "args : ";
+    for(int i = 0 ; i < argc; i++) {
+        cout << argv[i] << " ";
+    }
+    cout << endl;
+    Protocole pr;
+    if(argc <= 1)
+	    pr = PRIMARY;
+    else
+        if(strcmp(argv[1], "backup") == 0)
+	        pr = BACKUP;
+        else
+            pr = PRIMARY;
     //srv.loadMemory();
     //auto finish = std::chrono::high_resolution_clock::now();
     //std::chrono::duration<double> elapsed = finish - start;
     //std::cout << "Elapsed time: " << elapsed.count() << " s\n";
 
-	//sleep(100);
-    //srv.display(srv.calculOutput());
+    cout << "starting serv " << pr << endl;
+    Service srv(pr == PRIMARY ? 8080 : 8081, pr);
+	sleep(pr == PRIMARY ? 5 : 10);
+    srv.display(srv.calculOutput());
     return 0;
 }

@@ -14,14 +14,6 @@ using namespace std;
 
 class Watchdog{
     private:
-<<<<<<< HEAD
-    int secondes;
-    std::atomic<unsigned int> _timer;
-    bool kill, *p_kick, *p_state;
-    thread threadCycle;
-    int shmidKick;
-    int shmidState;
-=======
     int secondes, timeLimit = -1;
     std::atomic<clock_t> startTime;
     std::chrono::duration<double> elapsed;
@@ -29,7 +21,6 @@ class Watchdog{
     thread threadCycle;
     int shmidKick, shmidState;
     void watch();
->>>>>>> main
     void cycle();
     int getTimeLimit();
 
@@ -37,13 +28,9 @@ class Watchdog{
     bool stateSys;
     Watchdog();
     ~Watchdog();
-<<<<<<< HEAD
-    bool start();
-    int getTimeLimit();
-=======
     void start();
     bool getKick();
     void setKick(bool _kick);
     void setState(bool _state);
->>>>>>> main
+    bool readState();
 };

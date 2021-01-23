@@ -8,19 +8,12 @@ Watchdog::Watchdog(){
 
     // ftok to generate unique key 
     key_t keyKick = ftok("shmkick",65); 
-<<<<<<< HEAD
-    key_t keyState = ftok("shmstate",66); 
+    key_t keyState = ftok("shmstate",65); 
     // shmget returns an identifier in shmid 
     shmidKick = shmget(keyKick,sizeof(bool),0666|IPC_CREAT); 
     shmidState = shmget(keyState,sizeof(bool),0666|IPC_CREAT); 
-=======
-    key_t keyState = ftok("shmState",65); 
-    // shmget returns an identifier in shmid 
-    shmidKick = shmget(keyKick,sizeof(bool),0666|IPC_CREAT); 
-    shmidState = shmget(keyState,sizeof(bool),0666|IPC_CREAT); 
-
-    this->setKick(false);
->>>>>>> main
+    cout << "shmidState : " << shmidState << endl;
+    setState(false);
 }
 
 Watchdog::~Watchdog(){
@@ -29,14 +22,8 @@ Watchdog::~Watchdog(){
     threadCycle.join();
 
     // destroy the shared memory 
-<<<<<<< HEAD
     shmctl(this->shmidKick,IPC_RMID,NULL);       
     shmctl(this->shmidState,IPC_RMID,NULL); 
-=======
-    shmctl(this->shmidKick,IPC_RMID,NULL);
-    shmctl(this->shmidState,IPC_RMID,NULL);
-
->>>>>>> main
 }
 
 void Watchdog::start(){
@@ -44,6 +31,7 @@ void Watchdog::start(){
     this->stateSys = true;
     this->kill = false;
     this->setState(true);
+    cout << "Backup can be launch " << readState() << endl;
     this->threadCycle = thread(&Watchdog::cycle, this);
     this->watch();
 }
@@ -54,7 +42,7 @@ void Watchdog::watch(){
         if(((clock() - startTime) / (CLOCKS_PER_SEC / 1000)) > getTimeLimit()){
             stateSys = false;
             kill = true;
-            setState(false);
+            //setState(false);
             cerr << "No kick during " << ((clock() - startTime) / (CLOCKS_PER_SEC / 1000000.0)) << "us\n";
             this->threadCycle.join();
         }
@@ -79,31 +67,15 @@ void Watchdog::cycle() {
     
     while (!kill)
     {
-<<<<<<< HEAD
-        // shmat to attach to shared memory 
-        p_kick = (bool*) shmat(shmidKick,(void*)0,0);
-        p_state= (bool*) shmat(shmidState,(void*)0,0);
-        if(*p_kick) {
-            this->_timer = 0;
-            stateSys = true;
-        } else {
-            *p_state = false;
-        }
-        *p_kick = false;
-        shmdt(p_kick);
-        shmdt(p_state);
-=======
+        cout << "ShState : " << readState() << endl;
         if(getKick()) {
             this->startTime = clock();
         }
         setKick(false);
->>>>>>> main
         usleep(50000);
     }
 }
 
-<<<<<<< HEAD
-=======
 bool Watchdog::getKick() {
     bool res = false;
     p_kick = (bool*) shmat(shmidKick,(void*)0,SHM_RDONLY);
@@ -119,23 +91,29 @@ void Watchdog::setKick(bool _kick) {
 }
 
 void Watchdog::setState(bool _state) {
-    bool* shmState = (bool*) shmat(shmidKick,(void*)0,0);
+    bool* shmState = (bool*) shmat(shmidState,(void*)0,0);
     *shmState = _state;
     shmdt(shmState);
 }
 
+bool Watchdog::readState() {
+    bool* p_state = (bool*) shmat(shmidState,(void*)0,0);
+    bool state = *p_state; 
+    shmdt(p_state); 
+    return state;
+}
 
->>>>>>> main
+
 int main(){
     Watchdog test;
 
     while(true) {
-        cout << "wait for primary service" << endl;
+        cout << "wait for primary service v2" << endl;
         while(!test.getKick())
             usleep(50000);
         
         cout << "first kick" << endl;
         test.start();
-        cout << "primary lost" << endl;
+        cout << "primary lost \n\n\n";
     }
 }

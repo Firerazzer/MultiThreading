@@ -33,6 +33,7 @@ class Service {
         int shmidState;
         CapteurDriver driver;
         int protocole;
+        uint16_t port;
 
         void cycle();
         void kickWatchdog();

@@ -22,7 +22,6 @@ int main(int argc, char const *argv[])
 	Server s;
 	s.start();
 	thread quit (keyPressed);
-	cout << key << (key!="quit") << true << endl;
 	while (key!="quit")
 	{
 		s.toSend.push(to_string(rand()%100).c_str());
