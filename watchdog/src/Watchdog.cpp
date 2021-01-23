@@ -7,23 +7,24 @@ Watchdog::Watchdog(){
     kill = false;
 
     // ftok to generate unique key 
-    key_t keyKick = ftok("shmkick",65); 
-    key_t keyState = ftok("shmstate",65); 
+    // key_t keyKick = ftok("shmkick",65); 
+    // key_t keyState = ftok("shmstate",65); 
+
     // shmget returns an identifier in shmid 
-    shmidKick = shmget(keyKick,sizeof(bool),0666|IPC_CREAT); 
-    shmidState = shmget(keyState,sizeof(bool),0666|IPC_CREAT); 
+    shmidKick = shmget(12345,sizeof(bool),0666|IPC_CREAT); 
+    shmidState = shmget(12346,sizeof(bool),0666|IPC_CREAT); 
     cout << "shmidState : " << shmidState << endl;
     setState(false);
 }
 
 Watchdog::~Watchdog(){
-    stateSys = false;
-    kill = true;
-    threadCycle.join();
-
     // destroy the shared memory 
     shmctl(this->shmidKick,IPC_RMID,NULL);       
     shmctl(this->shmidState,IPC_RMID,NULL); 
+}
+
+void Watchdog::stop() {
+    stateSys = false;
 }
 
 void Watchdog::start(){
@@ -42,7 +43,7 @@ void Watchdog::watch(){
         if(((clock() - startTime) / (CLOCKS_PER_SEC / 1000)) > getTimeLimit()){
             stateSys = false;
             kill = true;
-            //setState(false);
+            setState(false);
             cerr << "No kick during " << ((clock() - startTime) / (CLOCKS_PER_SEC / 1000000.0)) << "us\n";
             this->threadCycle.join();
         }
@@ -64,10 +65,8 @@ int Watchdog::getTimeLimit(){
 }
 
 void Watchdog::cycle() {
-    
     while (!kill)
     {
-        cout << "ShState : " << readState() << endl;
         if(getKick()) {
             this->startTime = clock();
         }
@@ -104,16 +103,29 @@ bool Watchdog::readState() {
 }
 
 
-int main(){
-    Watchdog test;
+Watchdog test;
+bool stop = false;
 
-    while(true) {
+void signalHandler( int signum ) {
+    cout << "Interrupt signal (" << signum << ") received.\n";
+    
+    test.stop();
+    stop = true;
+}
+
+int main(){
+    signal(SIGINT, signalHandler); 
+
+    while(!stop) {
         cout << "wait for primary service v2" << endl;
-        while(!test.getKick())
+        while(!test.getKick() && !stop)
             usleep(50000);
         
-        cout << "first kick" << endl;
-        test.start();
-        cout << "primary lost \n\n\n";
+        if(!stop) {
+            cout << "first kick" << endl;
+            test.start();
+            cout << "primary lost \n\n\n";
+        }
     }
+    cout << "ending" << endl;
 }

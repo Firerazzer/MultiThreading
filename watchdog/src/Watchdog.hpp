@@ -7,6 +7,7 @@
 #include <sys/ipc.h> 
 #include <sys/shm.h> 
 #include <ctime>
+#include <csignal>
 
 using namespace std;
 
@@ -29,6 +30,7 @@ class Watchdog{
     Watchdog();
     ~Watchdog();
     void start();
+    void stop();
     bool getKick();
     void setKick(bool _kick);
     void setState(bool _state);

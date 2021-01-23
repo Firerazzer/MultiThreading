@@ -7,12 +7,12 @@ Service::Service(uint16_t _port, int protocole) {
     this->port = _port;
 
     // ftok to generate unique key 
-    key_t keyKick = ftok("shmkick",65); 
-    key_t keyState = ftok("smstate",70); 
+    // key_t keyKick = ftok("shmkick",65); 
+    // key_t keyState = ftok("shmstate",65); 
 
     // shmget returns an identifier in shmid 
-    shmidKick = shmget(keyKick,sizeof(bool),0);
-    shmidState = shmget(keyState,sizeof(bool),0);
+    shmidKick = shmget(12345,sizeof(bool),0666|IPC_CREAT);
+    shmidState = shmget(12346,sizeof(bool),0666|IPC_CREAT);
     cout << "shmidState : " << shmidState << endl;
 
     //Lance la lecture du capteur si on est en primary
@@ -56,26 +56,34 @@ int Service::saveMemory (int x) {
 }
 
 void Service::loadMemory(){
-    ifstream memory ("service/data/memory");
-    string line;
+    // ifstream memory ("service/data/memory");
+    // string line;
 
-    this->storage.clear();
+    // this->storage.clear();
 
-    int i = 0;
+    // int i = 0;
 
-    if(memory.is_open()){
-        while ( getline(memory,line) && i != n)
-        {
-            i++;
-            int value = stoi(line);
-            this->storage.push_back(value);
+    // if(memory.is_open()){
+    //     while ( getline(memory,line) && i != n)
+    //     {
+    //         i++;
+    //         int value = stoi(line);
+    //         this->storage.push_back(value);
 
-        }
-        memory.close();
+    //     }
+    //     memory.close();
+    // }
+    // else
+    // {
+    //     cout << "Le fichier n'a pas pu être ouvert!" << '\n';
+    // }
+    std::array<char, 128> buffer;
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen("tail -5 service/data/memory", "r"), pclose);
+    if (!pipe) {
+        throw std::runtime_error("popen() failed!");
     }
-    else
-    {
-        cout << "Le fichier n'a pas pu être ouvert!" << '\n';
+    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+        this->storage.push_back(atoi(buffer.data()));
     }
 }
 
@@ -108,20 +116,34 @@ void Service::cycle() {
             if(this->driver.dataReceived.size() > 0) {
                 this->storage.push_back(atoi(this->driver.dataReceived.front().c_str()));
                 this->driver.dataReceived.pop();
-                cout << "output : " << calculOutput() << endl;
+                while(this->storage.size() > n)
+                    this->storage.pop_front();
+                double res1 = calculOutput();
+                double res2 = calculOutput();
+                if(res1 != res2) {
+                    double res3 = calculOutput();
+                    if(res3 == res1)
+                        cout << "output : " << res1 << endl;
+                    else if (res3 == res2)
+                        cout << "output : " << res2 << endl;
+                    else
+                        killCycle = true;
+                } else
+                    cout << "output : " << res1 << endl;
+                
                 saveMemory(this->storage.back());
             }
 
         // Processing in BACKUP mode
         } else {
             bool primaryAlive = readStateWatchdog();
-            cout << "state read : " << primaryAlive << endl;
             if(!primaryAlive) {
                 usleep(100);
                 if(!readStateWatchdog()) {
                     loadMemory();
                     this->protocole = Protocole::PRIMARY;
                     cout << "Switch BACKUP to PRIMARY" << endl;
+                    cout << "value loaded : " << this->calculOutput() << endl;
                     //demarrage de la lecture du capteur
                     driver.start(this->port);
                 }
