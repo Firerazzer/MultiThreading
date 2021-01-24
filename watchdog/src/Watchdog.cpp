@@ -5,16 +5,11 @@ Watchdog::Watchdog(){
     stateSys = false;
     startTime = clock();
     kill = false;
-
-    // ftok to generate unique key 
-    // key_t keyKick = ftok("shmkick",65); 
-    // key_t keyState = ftok("shmstate",65); 
-
-    // shmget returns an identifier in shmid 
+    
     shmidKick = shmget(12345,sizeof(bool),0666|IPC_CREAT); 
     shmidState = shmget(12346,sizeof(bool),0666|IPC_CREAT); 
-    cout << "shmidState : " << shmidState << endl;
     setState(false);
+    setKick(false);
 }
 
 Watchdog::~Watchdog(){

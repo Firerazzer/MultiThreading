@@ -14,10 +14,6 @@ using namespace std;
 
 class CapteurDriver
 {
-    int sockfd; 
-	struct sockaddr_in servaddr;
-	bool killCycle = false;
-
 	public:
 		queue<string> dataReceived;
         //2 ports available : 8080 and 8081
@@ -26,5 +22,9 @@ class CapteurDriver
 
 	private:
 		thread threadCycle;
+		int sockfd; 
+		struct sockaddr_in servaddr;
+		bool killCycle = false;
+
 		void cycle();
 };

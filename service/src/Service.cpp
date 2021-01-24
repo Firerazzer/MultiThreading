@@ -6,14 +6,8 @@ Service::Service(uint16_t _port, int protocole) {
     this->protocole = protocole;
     this->port = _port;
 
-    // ftok to generate unique key 
-    // key_t keyKick = ftok("shmkick",65); 
-    // key_t keyState = ftok("shmstate",65); 
-
-    // shmget returns an identifier in shmid 
     shmidKick = shmget(12345,sizeof(bool),0666|IPC_CREAT);
     shmidState = shmget(12346,sizeof(bool),0666|IPC_CREAT);
-    cout << "shmidState : " << shmidState << endl;
 
     //Lance la lecture du capteur si on est en primary
     if(this->protocole == PRIMARY)
@@ -31,22 +25,21 @@ Service::~Service() {
     driver.stop();
 }
 
-int Service::saveMemory (int x) {
-    ofstream memory;
+int Service::saveMemory () {
+    ofstream memory("service/data/memory", fstream::trunc);
     string valueToSave;
-
-    valueToSave = "\n" + std::to_string(x);
-
-    memory.open("service/data/memory", fstream::app);
     
     if(memory.is_open()){
-        memory << valueToSave;
+        for(int x : this->storage) {
+            valueToSave = "\n" + std::to_string(x);
+            memory << valueToSave;
+        }
         memory.close();
         return 1;
     }
     else
     {
-        cout << "Le fichier n'a pas pu être ouvert!" << '\n';
+        cerr << "Le fichier n'a pas pu être ouvert!" << '\n';
         return -1;
     }
     
@@ -56,41 +49,57 @@ int Service::saveMemory (int x) {
 }
 
 void Service::loadMemory(){
-    // ifstream memory ("service/data/memory");
-    // string line;
+    // auto start = std::chrono::high_resolution_clock::now();
+    ifstream memory ("service/data/memory");
+    string line;
 
-    // this->storage.clear();
+    this->storage.clear();
 
-    // int i = 0;
-
-    // if(memory.is_open()){
-    //     while ( getline(memory,line) && i != n)
-    //     {
-    //         i++;
-    //         int value = stoi(line);
-    //         this->storage.push_back(value);
-
-    //     }
-    //     memory.close();
-    // }
-    // else
-    // {
-    //     cout << "Le fichier n'a pas pu être ouvert!" << '\n';
-    // }
-    std::array<char, 128> buffer;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen("tail -5 service/data/memory", "r"), pclose);
-    if (!pipe) {
-        throw std::runtime_error("popen() failed!");
+    if(memory.is_open()){
+        getline(memory,line);
+        while ( getline(memory,line))
+        {
+            int value = stoi(line);
+            this->storage.push_back(value);
+        }
+        memory.close();
     }
-    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-        this->storage.push_back(atoi(buffer.data()));
+    else
+    {
+        cerr << "Le fichier n'a pas pu être ouvert!" << '\n';
+        cerr << "Demarrage sans recuperation de la mémoire stable" << '\n';
     }
+
+    // std::array<char, 128> buffer;
+    // std::unique_ptr<FILE, decltype(&pclose)> pipe(popen("tail -5 service/data/memory", "r"), pclose);
+    // if (!pipe) {
+    //     throw std::runtime_error("popen() failed!");
+    // }
+    // while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+    //     this->storage.push_back(atoi(buffer.data()));
+    // }
+
+    // auto finish = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double> elapsed = finish - start;
+    // std::cout << "Elapsed time: " << elapsed.count() << " s\n";
 }
 
 double Service::calculOutput() {
     double sum = 0;
     for(int nb : this->storage) {
         sum += nb;
+    }
+
+    //si le mode erreur est active
+    if(error_mode > 0) {
+        //on genere une erreur en valeure 1 fois/2
+        if(error_mode%2 != 0){
+            sum+=6;
+        }
+        //a la 10eme demande on genere encore une erreur pour avoir 2 fautes d'affilees
+        if(error_mode == 10)
+            sum+=33;
+        error_mode++;
     }
     return sum/this->storage.size();
 }
@@ -121,17 +130,22 @@ void Service::cycle() {
                 double res1 = calculOutput();
                 double res2 = calculOutput();
                 if(res1 != res2) {
+                    cout << "Erreur de valeur, tentative de vote majoritaire" << endl;
                     double res3 = calculOutput();
                     if(res3 == res1)
                         cout << "output : " << res1 << endl;
                     else if (res3 == res2)
                         cout << "output : " << res2 << endl;
-                    else
+                    else {
+                        cerr << "Echec du vote majoritaire !" << endl;
+                        cerr << "Arret du service !" << endl;
                         killCycle = true;
+                    }
                 } else
                     cout << "output : " << res1 << endl;
                 
-                saveMemory(this->storage.back());
+                if(saveMemory() < 1)
+                    cerr << "Erreur sauvegarde" << endl;
             }
 
         // Processing in BACKUP mode
@@ -143,7 +157,7 @@ void Service::cycle() {
                     loadMemory();
                     this->protocole = Protocole::PRIMARY;
                     cout << "Switch BACKUP to PRIMARY" << endl;
-                    cout << "value loaded : " << this->calculOutput() << endl;
+                    cout << "value loaded from memory : " << this->calculOutput() << endl;
                     //demarrage de la lecture du capteur
                     driver.start(this->port);
                 }
@@ -162,11 +176,6 @@ void Service::  kickWatchdog() {
 int main(int argc, char const *argv[])
 {
     //auto start = std::chrono::high_resolution_clock::now();
-    cout << "args : ";
-    for(int i = 0 ; i < argc; i++) {
-        cout << argv[i] << " ";
-    }
-    cout << endl;
     Protocole pr;
     if(argc <= 1)
 	    pr = PRIMARY;
@@ -175,13 +184,17 @@ int main(int argc, char const *argv[])
 	        pr = BACKUP;
         else
             pr = PRIMARY;
+
     //srv.loadMemory();
     //auto finish = std::chrono::high_resolution_clock::now();
     //std::chrono::duration<double> elapsed = finish - start;
     //std::cout << "Elapsed time: " << elapsed.count() << " s\n";
 
-    cout << "starting serv " << pr << endl;
     Service srv(pr == PRIMARY ? 8080 : 8081, pr);
+    if(argc >= 3) {
+        srv.error_mode = 1;
+        cout << "mode erreur active" << endl;
+    }
 	sleep(pr == PRIMARY ? 5 : 10);
     srv.display(srv.calculOutput());
     return 0;

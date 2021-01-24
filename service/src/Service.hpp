@@ -17,7 +17,9 @@ using namespace std;
 class Service {
     public:
         bool killCycle;
-        int saveMemory(int x);
+        char error_mode = false;
+        
+        int saveMemory();
         void loadMemory();
         double calculOutput();
         bool readStateWatchdog();

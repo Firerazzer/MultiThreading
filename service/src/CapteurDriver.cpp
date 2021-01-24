@@ -13,7 +13,6 @@ bool CapteurDriver::start(uint16_t _port) {
     // Filling server information 
     servaddr.sin_family = AF_INET; 
     servaddr.sin_port = htons(_port); 
-    // servaddr.sin_addr.s_addr = INADDR_ANY; 
     inet_aton("127.0.0.255", &servaddr.sin_addr);
 
     // Bind the socket with the server address 

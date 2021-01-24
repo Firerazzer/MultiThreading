@@ -21,12 +21,14 @@ class Watchdog{
     bool kill, *p_kick;
     thread threadCycle;
     int shmidKick, shmidState;
+
     void watch();
     void cycle();
     int getTimeLimit();
 
     public:
     bool stateSys;
+
     Watchdog();
     ~Watchdog();
     void start();

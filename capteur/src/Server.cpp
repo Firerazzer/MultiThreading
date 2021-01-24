@@ -25,21 +25,11 @@ bool Server::start() {
     servaddr.sin_family    = AF_INET; // IPv4 
     servaddr.sin_addr.s_addr = INADDR_ANY; 
     servaddr.sin_port = htons(PORT); 
-      
-    // // Bind the socket with the server address 
-    // if ( bind(this->sockfd, (const struct sockaddr *)&servaddr,  
-    //         sizeof(servaddr)) < 0 ) 
-    // { 
-    //     perror("bind failed"); 
-    //     exit(EXIT_FAILURE); 
-    // } 
 
     memset(&cliaddr_1, 0, sizeof cliaddr_1);
     cliaddr_1.sin_family = AF_INET;
     cliaddr_1.sin_port = htons(PORT);
-    // broadcasting address for unix (?)
     inet_aton("127.0.0.255", &cliaddr_1.sin_addr);
-    //cliaddr.sin_addr.s_addr = INADDR_ANY;
 
     memset(&cliaddr_2, 0, sizeof cliaddr_2);
     cliaddr_2.sin_family = AF_INET;
