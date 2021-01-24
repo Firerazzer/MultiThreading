@@ -7,8 +7,8 @@ git clone https://github.com/FlorentLabrune/MultiThreading.git
 ```
 
 # Build project
-cd MultiThreading
 ```
+cd MultiThreading
 ./build.sh
 ```
 
