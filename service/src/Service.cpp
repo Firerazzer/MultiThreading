@@ -104,8 +104,8 @@ double Service::calculOutput() {
     return sum/this->storage.size();
 }
 
-void Service::display(int result) {
-    cout << "Result : " << result << "\n";
+double Service::getValue() {
+    return this->value;
 }
 
 bool Service::readStateWatchdog() {
@@ -120,8 +120,10 @@ void Service::cycle() {
     {
         // Processing in PRIMARY mode
         if(this->protocole == Protocole::PRIMARY) {
+            //BEFORE
             kickWatchdog();
-            //cout << this->driver.dataReceived.size() << endl;
+            
+            //PROCEED
             if(this->driver.dataReceived.size() > 0) {
                 this->storage.push_back(atoi(this->driver.dataReceived.front().c_str()));
                 this->driver.dataReceived.pop();
@@ -133,17 +135,18 @@ void Service::cycle() {
                     cout << "Erreur de valeur, tentative de vote majoritaire" << endl;
                     double res3 = calculOutput();
                     if(res3 == res1)
-                        cout << "output : " << res1 << endl;
+                        this->value = res1;
                     else if (res3 == res2)
-                        cout << "output : " << res2 << endl;
+                        this->value = res2;
                     else {
                         cerr << "Echec du vote majoritaire !" << endl;
                         cerr << "Arret du service !" << endl;
                         killCycle = true;
                     }
                 } else
-                    cout << "output : " << res1 << endl;
-                
+                    this->value = res1;
+
+            //AFTER
                 if(saveMemory() < 1)
                     cerr << "Erreur sauvegarde" << endl;
             }
@@ -164,10 +167,14 @@ void Service::cycle() {
     }
 }
 
-void Service::  kickWatchdog() {
+void Service::kickWatchdog() {
     this->p_kick = (bool*) shmat(shmidKick,(void*)0,0);
     *p_kick = true; 
     shmdt(p_kick); 
+}
+
+int Service::getProtocole() {
+    return this->protocole;
 }
 
 int main(int argc, char const *argv[])
@@ -192,7 +199,13 @@ int main(int argc, char const *argv[])
         srv.error_mode = 1;
         cout << "mode erreur active" << endl;
     }
-	sleep(pr == PRIMARY ? 5 : 10);
-    srv.display(srv.calculOutput());
+    int i = 0;
+    while(i < 10) {
+        if(srv.getProtocole() == PRIMARY) {
+            usleep(500000);
+            cout << "result : " << srv.getValue() << endl;
+            i++;
+        }
+    }
     return 0;
 }

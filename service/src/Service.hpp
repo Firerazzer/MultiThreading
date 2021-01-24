@@ -9,6 +9,7 @@
 #include <fstream>
 #include <list>
 #include <thread>
+#include <atomic>
 #include "CapteurDriver.hpp"
 #include "Protocole.hpp"
 
@@ -19,13 +20,10 @@ class Service {
         bool killCycle;
         char error_mode = false;
         
-        int saveMemory();
-        void loadMemory();
-        double calculOutput();
-        bool readStateWatchdog();
+        double getValue();
+        int getProtocole();
         Service(uint16_t _port, int protocole);
         ~Service();
-        void display(int result);
 
     private:
         list<int> storage;
@@ -34,9 +32,14 @@ class Service {
         int shmidKick;
         int shmidState;
         CapteurDriver driver;
-        int protocole;
         uint16_t port;
+        int protocole;
+        std::atomic<double> value;
 
         void cycle();
         void kickWatchdog();
+        int saveMemory();
+        void loadMemory();
+        bool readStateWatchdog();
+        double calculOutput();
 };
