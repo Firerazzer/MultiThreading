@@ -152,15 +152,12 @@ void Service::cycle() {
         } else {
             bool primaryAlive = readStateWatchdog();
             if(!primaryAlive) {
-                usleep(100);
-                if(!readStateWatchdog()) {
-                    loadMemory();
-                    this->protocole = Protocole::PRIMARY;
-                    cout << "Switch BACKUP to PRIMARY" << endl;
-                    cout << "value loaded from memory : " << this->calculOutput() << endl;
-                    //demarrage de la lecture du capteur
-                    driver.start(this->port);
-                }
+                loadMemory();
+                this->protocole = Protocole::PRIMARY;
+                cout << "Switch BACKUP to PRIMARY" << endl;
+                cout << "value loaded from memory : " << this->calculOutput() << endl;
+                //demarrage de la lecture du capteur
+                driver.start(this->port);
             }
         }
         usleep(50000);
