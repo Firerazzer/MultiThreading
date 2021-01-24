@@ -2,35 +2,39 @@
 Projet de MultiThreading et Safety des systèmes informatiques
 
 # Download project
-'''
+```
 git clone https://github.com/FlorentLabrune/MultiThreading.git
-'''
+```
 
 # Build project
 cd MultiThreading
-'''
+```
 ./build.sh
-'''
+```
 
 # Run project
 lancer le capteur
-'''
+```
 ./capteur/bin/Capteur
-'''
+```
 
 lancer le watchdog
-'''
+```
 ./watchdog/bin/Watchdog
-'''
+```
 
 lancer le service en mode primary
-'''
+```
 ./service/bin/Service primary
-'''
+```
 OU en mode backup
-'''./service/bin/Service backup'''
+```
+./service/bin/Service backup
+```
 OU en mode injection d'erreur
-'''./service/bin/Service [primary|backup] f'''
+```
+./service/bin/Service [primary|backup] f
+```
 
 # Notes
 Il est judicieux de lancer ces commandes dans des terminaux différents pour voir clairement les interactions
