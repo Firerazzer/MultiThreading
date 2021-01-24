@@ -7,6 +7,7 @@ git clone https://github.com/FlorentLabrune/MultiThreading.git
 ```
 
 # Build project
+prerequisite : gcc 9.3 or higher
 ```
 cd MultiThreading
 ./build.sh
